@@ -2,9 +2,9 @@
   "development": {
     "config_id": "development",
     "app_name": "gettokenbalance",
-    "walletPrivateKey": "de083fe8786ec80553012f348ca2817630dcce6a8fd4f9db25245f810f83ceff",
+    "walletPrivateKey": "SET_YOUR_WALLET_PRIVATE_KEY",
     "app_desc": "this app fetches the balance of a wallet address and token address, the user passes in the URL",
-    "app_uri_gettokenbalance": "/getBalance/",
+    "app_uri_ctokenbalance": "/wallet-balance/ceth/",
     "node_port": 3006,
     "erc20Abi": [
     {

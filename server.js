@@ -54,14 +54,13 @@ app.use(function(err, req, res, next) {
 });
 
 //Initialising private key variable
-const walletPrivateKey = global.gConfig.walletPrivateKey; 
+const walletPrivateKey = global.gConfig.walletPrivateKey;
 //Initialising web3 object 
 const web3 = new Web3('https://mainnet.infura.io/v3/4bdfcdc7dc064fbe81ed335e2706a32b');
-
 web3.eth.accounts.wallet.add(walletPrivateKey);
 var myWalletAddress = "";
-const ethDecimals = 18;
 
+const ethDecimals = 18;
 const port = 3000;
 
 app.use(bodyParser.json());
@@ -69,30 +68,31 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 
-app.get('/',function(req,res) {
-res.sendFile(path.join(__dirname+'/index.html'));
+// Handling the route calls
+app.get('/', function(req, res) {
+    res.sendFile(path.join(__dirname + '/index.html'));
 });
 
-app.route('/wallet-balance/ceth/').get((req, res) => {
+// Handling the route calls
+app.route(global.gConfig.app_uri_ctokenbalance).get((req, res) => {
     myWalletAddress = req.query.address;
     let isValidEthAddress = Web3.utils.isAddress(myWalletAddress);
-	console.log(isValidEthAddress);
-	if(isValidEthAddress){
-	jsonData[key] = [];
-	start(function() {	
-	res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify(jsonData, 0, 2));
-	
-    }).catch((err) => {
-        console.error(err);
-    });;
-	}
-	else{
-		
-		jsonData[key] = [];
-		res.setHeader('Content-Type', 'application/json');
-		res.end(JSON.stringify(jsonData, 0, 2));
-	}
+    console.log(isValidEthAddress);
+    if (isValidEthAddress) {
+        jsonData[key] = [];
+        start(function() {
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(jsonData, 0, 2));
+
+        }).catch((err) => {
+            console.error(err);
+        });;
+    } else {
+
+        jsonData[key] = [];
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(jsonData, 0, 2));
+    }
 });
 
 
@@ -102,64 +102,74 @@ async function start(callback) {
     const blocksPerDay = 6570; // 13.15 seconds per block
     const daysPerYear = 365;
 
+	// Initialing the Abi objects
     const cTokenAbi = global.gConfig.cTokenAbi;
-	const erc20Abi = global.gConfig.erc20Abi;
+    const erc20Abi = global.gConfig.erc20Abi;
 
-    let main = []
+    // Reading the cToken addresses config file
     let openJSON = fs.readFileSync('./config/cAddresses_Config.json', 'utf-8');
     let parseJSON = JSON.parse(openJSON);
 
     for (let i = 0; i < parseJSON.addresses.length; i++) {
+		// Reading the token addresses from config file
         const cTokenAddress = parseJSON.addresses[i]["address"];
-		const tokenAddress = parseJSON.addresses[i]["ercaddress"];
+        const tokenAddress = parseJSON.addresses[i]["ercaddress"];
 
+		// Initialing the contract objects
         const cToken = new web3.eth.Contract(cTokenAbi, cTokenAddress);
-		const underlyingToken = new web3.eth.Contract(erc20Abi, tokenAddress);
+        const underlyingToken = new web3.eth.Contract(erc20Abi, tokenAddress);
 
-
+		// Calculating the lending and supply APY rates
         const supplyRatePerBlock = await cToken.methods.supplyRatePerBlock().call();
         const borrowRatePerBlock = await cToken.methods.borrowRatePerBlock().call();
         var supplyApy = (((Math.pow((supplyRatePerBlock / ethMantissa * blocksPerDay) + 1, daysPerYear))) - 1) * 100;
         var borrowApy = (((Math.pow((borrowRatePerBlock / ethMantissa * blocksPerDay) + 1, daysPerYear))) - 1) * 100;
         supplyApy = roundToTwo(supplyApy);
         borrowApy = roundToTwo(borrowApy);
+		
+		// Fetching the balance of cToken for the provided wallet address and converting it to ether
         var balance = await cToken.methods.balanceOf(myWalletAddress).call();
+        const etherValue = Web3.utils.fromWei(balance, 'ether');
 
+		// Fetching the exchange rate
         var exchangeRateCurrent = await cToken.methods.exchangeRateCurrent().call();
         exchangeRateCurrent = exchangeRateCurrent / Math.pow(10, 18 + ethDecimals - 8);
 
+		// Fetching the underlying value
         const balanceOfUnderlying = web3.utils.toBN(await cToken.methods.balanceOfUnderlying(myWalletAddress).call()) / Math.pow(10, ethDecimals);
-	
-		const cTokenDecimals = 8; // all cTokens have 8 decimal places
-		const underlyingDecimals = await underlyingToken.methods.decimals().call();
-		const mantissa = 18 + parseInt(underlyingDecimals) - cTokenDecimals;
-		const oneCTokenInUnderlying = exchangeRateCurrent / Math.pow(10, mantissa);
-		 
+
+		// Calculating the redeem rate for underlying token
+        const cTokenDecimals = 8; // all cTokens have 8 decimal places
+        const underlyingDecimals = await underlyingToken.methods.decimals().call();
+        const mantissa = 18 + parseInt(underlyingDecimals) - cTokenDecimals;
+        const oneCTokenInUnderlying = exchangeRateCurrent / Math.pow(10, mantissa);
+
+		// Logging the values to console
         console.log(`Name ${parseJSON.addresses[i]["name"]}`);
         console.log(`Supply1 APY for ETH ${supplyApy} %`);
         console.log(`Borrow1 APY for ETH ${borrowApy} %`);
-        console.log(`Balance ${balance}`);
+        console.log(`Balance ${etherValue}`);
         console.log(`CToken UnderlyingBalance ${balanceOfUnderlying}`);
-		console.log(`One cToken Underlying ${oneCTokenInUnderlying}`);
+        console.log(`One cToken Underlying ${oneCTokenInUnderlying}`);
         console.log(' --------------------------');
         console.log('');
 
 
-		if(balance!=0){
-        var data = {
-            cTokenName: parseJSON.addresses[i]["name"],
-            cTokenAddress: cTokenAddress,
-            WalletAddress: myWalletAddress,
-            SupplyAPY: supplyApy,
-            BorrowAPY: borrowApy,
-            Balance: balance,
-			RedeemRate: oneCTokenInUnderlying,
-			BalanceOfUnderlying:balanceOfUnderlying
-			
-        };
+        if (balance != 0) {
+            var data = {
+                cTokenName: parseJSON.addresses[i]["name"],
+                cTokenAddress: cTokenAddress,
+                WalletAddress: myWalletAddress,
+                SupplyAPY: supplyApy,
+                BorrowAPY: borrowApy,
+                Balance: etherValue,
+                RedeemRate: oneCTokenInUnderlying,
+                BalanceOfUnderlying: balanceOfUnderlying
 
-        jsonData[key].push(data);
-		}
+            };
+
+            jsonData[key].push(data);
+        }
 
     }
     callback();
@@ -169,12 +179,15 @@ async function start(callback) {
 
 }
 
+// Function to round the umber to 2 decimals
 function roundToTwo(num) {
     return +(Math.round(num + "e+2") + "e-2");
 }
 
-
-app.use(cors({origin: 'null'}));
+// Setting the cors for permitting to use the api from local domains
+app.use(cors({
+    origin: 'null'
+}));
 
 
 
