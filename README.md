@@ -28,4 +28,7 @@ const web3 = new Web3('https://mainnet.infura.io/v3/_your_api_key_here_');
 
 ```
 node server.js
+Or
+Run the URL http://localhost:PORT_NUM in web browser
+Note: PORT_NUM is the port number in app config file under config folder.
 ```
