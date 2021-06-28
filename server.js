@@ -56,7 +56,7 @@ app.use(function(err, req, res, next) {
 //Initialising private key variable
 const walletPrivateKey = global.gConfig.walletPrivateKey;
 //Initialising web3 object 
-const web3 = new Web3('https://mainnet.infura.io/v3/4bdfcdc7dc064fbe81ed335e2706a32b');
+const web3 = new Web3('https://mainnet.infura.io/v3/_your_api_key_here_');
 web3.eth.accounts.wallet.add(walletPrivateKey);
 var myWalletAddress = "";
 
