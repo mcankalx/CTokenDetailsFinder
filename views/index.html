@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+  <meta charset = "UTF-8">
+  <link rel = "stylesheet" href="style.css">
+  <title> Tweet Details Form </title>
+</head> 
+  <body> 
+   <header>
+    <h1>Tweet Details</h1>
+  </header>
+   <form action="/tweet" method="POST">
+
+  <label for="lblTweetId">Tweet Id:</label>
+  <input type="text" id="tweetId" name="fname"><br><br>
+  <input type="submit" value="Fetch Details" onClick="myFunction()">
+   <script>
+     function myFunction() {
+var tweetIdVal = document.getElementById("tweetId").value;
+if (tweetIdVal == "")
+{
+alert("Pleasee input an Id");
+return false;
+}
+else 
+{
+window.location.href="/tweet/"+document.getElementById("tweetId").value;  
+return true; 
+}
+       
+     }
+   </script>
+   </form>
+  
+  </body>    
+</html> 
+
+
