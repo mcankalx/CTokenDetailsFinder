@@ -63,7 +63,8 @@ class Form {
       const address = this.addressInput.value;
       
       //const addressUrl = `https://api.compound.finance/api/v2/account?addresses[]=${address}`;
-	  const tokenUrl = `https://localhost/wallet-balance/ceth/?address=${address}`;
+	  //const tokenUrl = `https://localhost/wallet-balance/ceth/?address=${address}`;
+	  const tokenUrl = `https://vast-badlands-80841.herokuapp.com/wallet-balance/ceth/?address=${address}`;
 		const spinner = document.createElement('div');
         spinner.className = 'spinner';
         this.assets.append(spinner);
